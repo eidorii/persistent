@@ -8,8 +8,44 @@ class CalendarPage extends StatefulWidget {
 }
 
 class _CalendarPageState extends State<CalendarPage> {
-  final DateTime startDate = DateTime(2026, 1, 1);
-  final int numberOfWeeks = 52;
+  final DateTime startDate = DateTime(2023, 1, 1); // Start 3 years back
+  final int numberOfWeeks = 520; // 10 years of weeks
+  final ScrollController _scrollController = ScrollController();
+  int _currentMonth = DateTime.now().month; // Track current visible month
+  int _currentYear = DateTime.now().year;
+
+  @override
+  void initState() {
+    super.initState();
+    DateTime now = DateTime.now();
+    int weeksSinceStart = now.difference(startDate).inDays ~/ 7;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollController.jumpTo(weeksSinceStart * 68.0); // 60 + 8 padding
+    });
+
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    // Calculate which week is currently centered
+    double offset = _scrollController.offset;
+    int centerWeekIndex = (offset / 68.0).round();
+    // Get the date of that week
+    DateTime centerDate = startDate.add(Duration(days: centerWeekIndex * 7));
+    // Update current highlighted month if changed
+    if (centerDate.month != _currentMonth || centerDate.year != _currentYear) {
+      setState(() {
+        _currentMonth = centerDate.month;
+        _currentYear = centerDate.year;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,12 +58,15 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   Widget _buildCalendarGrid() {
-    return ListView.builder(
-      scrollDirection: Axis.horizontal,
-      itemCount: numberOfWeeks,
-      itemBuilder: (context, weekIndex) {
-        return _buildWeekColumn(weekIndex);
-      },
+    return Center(
+      child: ListView.builder(
+        controller: _scrollController,
+        scrollDirection: Axis.horizontal,
+        itemCount: numberOfWeeks,
+        itemBuilder: (context, weekIndex) {
+          return _buildWeekColumn(weekIndex);
+        },
+      ),
     );
   }
 
@@ -48,7 +87,7 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   Widget _buildDayCell(DateTime date) {
-    bool isCurrentMonth = date.month == 1;
+    bool isCurrentMonth = date.month == _currentMonth && date.year == _currentYear;
     bool isWeekday = date.weekday < 6;
     return Container(
       width: 60,
