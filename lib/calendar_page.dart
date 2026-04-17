@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'day_entry.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -8,41 +10,88 @@ class CalendarPage extends StatefulWidget {
 }
 
 class _CalendarPageState extends State<CalendarPage> {
-  final DateTime startDate = DateTime(2023, 1, 1); // Start 3 years back
-  final int numberOfWeeks = 520; // 10 years of weeks
+  final DateTime startDate = DateTime(2023, 1, 1);
+  final int numberOfWeeks = 520;
   final ScrollController _scrollController = ScrollController();
-  int _currentMonth = DateTime.now().month; // Track current visible month
+  int _currentMonth = DateTime.now().month;
   int _currentYear = DateTime.now().year;
+  Timer? _scrollEndTimer;
+  DateTime? _selectedDate;
+  final Map<DateTime, DayEntry> _dayEntries = {};
+
+  double? _columnWidth;
+  bool _initialJumpDone = false;
+
+  DateTime get _gridEpoch {
+    final s = DateTime.utc(startDate.year, startDate.month, startDate.day);
+    return s.subtract(Duration(days: s.weekday - 1));
+  }
 
   @override
   void initState() {
     super.initState();
-    DateTime now = DateTime.now();
-    int weeksSinceStart = now.difference(startDate).inDays ~/ 7;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollController.jumpTo(weeksSinceStart * 68.0); // 60 + 8 padding
-    });
-
     _scrollController.addListener(_onScroll);
   }
 
   void _onScroll() {
-    // Calculate which week is currently centered
-    double offset = _scrollController.offset;
-    int centerWeekIndex = (offset / 68.0).round();
-    // Get the date of that week
-    DateTime centerDate = startDate.add(Duration(days: centerWeekIndex * 7));
+    if (_columnWidth == null) return;
+
+    final viewportWidth = _scrollController.position.viewportDimension;
+    final middleOffset = _scrollController.offset + viewportWidth / 2;
+    final middleWeekIndex = (middleOffset / _columnWidth!).floor();
+    final middleDate = _gridEpoch.add(Duration(days: middleWeekIndex * 7 + 3));
     // Update current highlighted month if changed
-    if (centerDate.month != _currentMonth || centerDate.year != _currentYear) {
+    if (middleDate.month != _currentMonth || middleDate.year != _currentYear) {
       setState(() {
-        _currentMonth = centerDate.month;
-        _currentYear = centerDate.year;
+        _currentMonth = middleDate.month;
+        _currentYear = middleDate.year;
       });
     }
+
+    // reset snap timer on scroll
+    _scrollEndTimer?.cancel();
+    _scrollEndTimer = Timer(const Duration(milliseconds: 300), _snapToMonth);
+  }
+
+  DayEntry _entryFor(DateTime date) {
+    final key = DateTime.utc(date.year, date.month, date.day);
+    return _dayEntries.putIfAbsent(key, () => DayEntry(date: key));
+  }
+
+  void _onDayTap(DateTime date) {
+    final entry = _entryFor(date);
+    final isSelected = _selectedDate == entry.date;
+    setState(() {
+      _selectedDate = isSelected ? null : entry.date;
+    });
+    if (isSelected) {
+      debugPrint('Deselected ${entry.date.toIso8601String().split('T').first}');
+    } else {
+      debugPrint('Selected ${entry.date.toIso8601String().split('T').first} '
+          '- routines: ${entry.routines}');
+    }
+  }
+
+  void _snapToMonth() {
+    if (_columnWidth == null || !_scrollController.hasClients) return;
+
+    // find the first Monday of the current highlighted month
+    final firstOfMonth = DateTime.utc(_currentYear, _currentMonth, 1);
+    final firstMonday = firstOfMonth.subtract(Duration(days: firstOfMonth.weekday - 1));
+    final weeksToFirstMonday = firstMonday.difference(_gridEpoch).inDays ~/ 7;
+    final targetOffset = weeksToFirstMonday * _columnWidth!;
+
+    // snap to that position
+    _scrollController.animateTo(
+      targetOffset,
+      duration: const Duration(milliseconds: 100),
+      curve: Curves.easeOut,
+    );
   }
 
   @override
   void dispose() {
+    _scrollEndTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
@@ -50,66 +99,109 @@ class _CalendarPageState extends State<CalendarPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: _buildCalendarGrid(),
+      body: Column(
+        children: [
+          _buildHeader(),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: _buildCalendarGrid(),
+            ),
+          ),
+          _buildFooter(),
+        ],
       ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      height: 100,
+      color: Colors.grey,
+    );
+  }
+
+  Widget _buildFooter() {
+    return Container(
+      height: 140,
+      color: Colors.grey,
     );
   }
 
   Widget _buildCalendarGrid() {
-    return Center(
-      child: ListView.builder(
-        controller: _scrollController,
-        scrollDirection: Axis.horizontal,
-        itemCount: numberOfWeeks,
-        itemBuilder: (context, weekIndex) {
-          return _buildWeekColumn(weekIndex);
-        },
-      ),
+    return LayoutBuilder(
+        builder: (context, constraints) {
+          _columnWidth = constraints.maxWidth / 6;
+
+          if (!_initialJumpDone) {
+            _initialJumpDone = true;
+            final now = DateTime.now();
+            final todayUtc = DateTime.utc(now.year, now.month, now.day);
+            final weeksSinceStart =
+                todayUtc.difference(_gridEpoch).inDays ~/ 7;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (_scrollController.hasClients) {
+                _scrollController.jumpTo(weeksSinceStart * _columnWidth!);
+              }
+            });
+          }
+          return ListView.builder(
+              controller: _scrollController,
+              scrollDirection: Axis.horizontal,
+              itemExtent: _columnWidth,
+              itemCount: numberOfWeeks,
+              itemBuilder: (context, weekIndex) => _buildWeekColumn(weekIndex),
+          );
+        }
     );
   }
 
   Widget _buildWeekColumn(int weekIndex) {
-    DateTime weekStart = startDate.add(Duration(days: weekIndex * 7));
-    DateTime monday = weekStart.subtract(Duration(days: weekStart.weekday - 1));
-
-    return Padding(
-      padding: const EdgeInsets.only(right: 8.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(7, (dayIndex) {
-          DateTime currentDate = monday.add(Duration(days: dayIndex));
-          return _buildDayCell(currentDate);
-        }),
-      ),
+    final monday = _gridEpoch.add(Duration(days: weekIndex * 7));
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: List.generate(7, (dayIndex) {
+        return _buildDayCell(monday.add(Duration(days: dayIndex)));
+      }),
     );
   }
 
   Widget _buildDayCell(DateTime date) {
     bool isCurrentMonth = date.month == _currentMonth && date.year == _currentYear;
     bool isWeekday = date.weekday < 6;
-    return Container(
-      width: 60,
-      height: 60,
-      margin: const EdgeInsets.only(bottom: 8.0),
-      decoration: BoxDecoration(
-        color: isCurrentMonth
-            ? (isWeekday
-                  ? Colors.grey[300]
-                  : Color.fromRGBO(241, 164, 164, 1.0))
-            : (isWeekday
-                  ? Colors.grey[200]
-                  : Color.fromRGBO(248, 203, 203, 1.0)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Center(
-        child: Text(
-          '${date.day}',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: isCurrentMonth ? Colors.black87 : Colors.black26,
+    final isSelected = _selectedDate != null &&
+      date.year == _selectedDate!.year &&
+      date.month == _selectedDate!.month &&
+      date.day == _selectedDate!.day;
+    return GestureDetector(
+      onTap: () => _onDayTap(date),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 55,
+        width: 55,
+        margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0),
+        decoration: BoxDecoration(
+          color: isSelected
+            ? const Color.fromRGBO(75, 75, 75, 1.0)
+            : isCurrentMonth
+              ? (isWeekday
+                    ? Colors.grey[300]
+                    : Color.fromRGBO(241, 164, 164, 1.0))
+              : (isWeekday
+                    ? Colors.grey[200]
+                    : Color.fromRGBO(248, 203, 203, 1.0)),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Center(
+          child: Text(
+            '${date.day}',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: isSelected
+                  ? Colors.white
+                  : (isCurrentMonth ? Colors.black87 : Colors.black26),
+            ),
           ),
         ),
       ),
