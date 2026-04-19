@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'day_entry.dart';
+import 'month_selector.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -18,6 +19,7 @@ class _CalendarPageState extends State<CalendarPage> {
   Timer? _scrollEndTimer;
   DateTime? _selectedDate;
   final Map<DateTime, DayEntry> _dayEntries = {};
+  static const int _monthCount = 120;
 
   double? _columnWidth;
   bool _initialJumpDone = false;
@@ -26,6 +28,9 @@ class _CalendarPageState extends State<CalendarPage> {
     final s = DateTime.utc(startDate.year, startDate.month, startDate.day);
     return s.subtract(Duration(days: s.weekday - 1));
   }
+
+  int get _currentMonthIndex =>
+    (_currentYear - startDate.year) * 12 + (_currentMonth - 1);
 
   @override
   void initState() {
@@ -117,14 +122,37 @@ class _CalendarPageState extends State<CalendarPage> {
   Widget _buildHeader() {
     return Container(
       height: 100,
-      color: Colors.grey,
+      alignment: Alignment.bottomCenter,
+      child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 250),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Container(
+                      color: Colors.grey[200],
+                      child: MonthSelector(
+                          startYear: startDate.year,
+                          monthCount: _monthCount,
+                          currentMonthIndex: _currentMonthIndex
+                      ),
+                    ),
+                  ),
+                )
+              )
+            )
+          ],
+      ),
     );
   }
 
   Widget _buildFooter() {
     return Container(
       height: 140,
-      color: Colors.grey,
+      color: Colors.grey[300],
     );
   }
 
