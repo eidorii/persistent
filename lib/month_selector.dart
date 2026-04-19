@@ -41,8 +41,8 @@ class _MonthSelectorState extends State<MonthSelector> {
             _controller.position.minScrollExtent,
             _controller.position.maxScrollExtent,
         ),
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOut,
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeInOut,
     );
   }
 

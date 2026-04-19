@@ -195,41 +195,48 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   Widget _buildDayCell(DateTime date) {
-    bool isCurrentMonth = date.month == _currentMonth && date.year == _currentYear;
-    bool isWeekday = date.weekday < 6;
+    final isCurrentMonth = date.month == _currentMonth && date.year == _currentYear;
+    final isWeekday = date.weekday < 6;
     final isSelected = _selectedDate != null &&
       date.year == _selectedDate!.year &&
       date.month == _selectedDate!.month &&
       date.day == _selectedDate!.day;
+    final color = isSelected
+        ? const Color.fromRGBO(75, 75, 75, 1.0)
+        : isCurrentMonth
+          ? (isWeekday
+            ? Colors.grey[300]
+            : Color.fromRGBO(241, 164, 164, 1.0))
+          : (isWeekday
+            ? Colors.grey[200]
+            : Color.fromRGBO(248, 203, 203, 1.0));
+    final textColor = isSelected
+        ? Colors.white
+        : (isCurrentMonth ? Colors.black87 : Colors.black26);
+
     return GestureDetector(
       onTap: () => _onDayTap(date),
       behavior: HitTestBehavior.opaque,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
         height: 55,
         width: 55,
         margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0),
         decoration: BoxDecoration(
-          color: isSelected
-            ? const Color.fromRGBO(75, 75, 75, 1.0)
-            : isCurrentMonth
-              ? (isWeekday
-                    ? Colors.grey[300]
-                    : Color.fromRGBO(241, 164, 164, 1.0))
-              : (isWeekday
-                    ? Colors.grey[200]
-                    : Color.fromRGBO(248, 203, 203, 1.0)),
+          color: color,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Center(
-          child: Text(
-            '${date.day}',
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: isSelected
-                  ? Colors.white
-                  : (isCurrentMonth ? Colors.black87 : Colors.black26),
+              color: textColor,
             ),
+            child: Text('${date.day}'),
           ),
         ),
       ),
