@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'day_entry.dart';
-import 'month_selector.dart';
+import 'month_selector_header.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -127,13 +127,14 @@ class _CalendarPageState extends State<CalendarPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Expanded(
-              child: Center(
+              child: Container(
+                alignment: Alignment.bottomCenter,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 250),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(24),
                     child: Container(
-                      color: Colors.grey[200],
+                      color: Color.fromRGBO(217, 217, 217, 1.0),
                       child: MonthSelector(
                           startYear: startDate.year,
                           monthCount: _monthCount,
@@ -205,10 +206,10 @@ class _CalendarPageState extends State<CalendarPage> {
         ? const Color.fromRGBO(75, 75, 75, 1.0)
         : isCurrentMonth
           ? (isWeekday
-            ? Colors.grey[300]
+            ? Color.fromRGBO(217, 217, 217, 1.0)
             : Color.fromRGBO(241, 164, 164, 1.0))
           : (isWeekday
-            ? Colors.grey[200]
+            ? Color.fromRGBO(227, 227, 227, 0.5)
             : Color.fromRGBO(248, 203, 203, 1.0));
     final textColor = isSelected
         ? Colors.white
@@ -232,8 +233,8 @@ class _CalendarPageState extends State<CalendarPage> {
             duration: const Duration(milliseconds: 400),
             curve: Curves.easeInOut,
             style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
+              fontSize: 27,
+              fontWeight: FontWeight.w500,
               color: textColor,
             ),
             child: Text('${date.day}'),
