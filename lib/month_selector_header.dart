@@ -41,7 +41,7 @@ class _MonthSelectorState extends State<MonthSelector> {
             _controller.position.minScrollExtent,
             _controller.position.maxScrollExtent,
         ),
-        duration: const Duration(milliseconds: 150),
+        duration: const Duration(milliseconds: 75),
         curve: Curves.easeInOut,
     );
   }
@@ -58,7 +58,7 @@ class _MonthSelectorState extends State<MonthSelector> {
       height: 40,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          _itemWidth = constraints.maxWidth * 0.5;
+          _itemWidth = constraints.maxWidth * 0.55;
 
           // first build: jump without animation so initial month is centered
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -93,9 +93,9 @@ class _MonthSelectorState extends State<MonthSelector> {
                       maxLines: 1,
                       softWrap: false,
                       style: TextStyle(
-                        fontSize: 22,
+                        fontSize: 27,
                         fontWeight:
-                        isCurrent ? FontWeight.w700 : FontWeight.w500,
+                        isCurrent ? FontWeight.w600 : FontWeight.w400,
                       ),
                     ),
                   ),
