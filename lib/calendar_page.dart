@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'day_entry.dart';
 import 'month_selector_header.dart';
+import 'calendar_footer.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -150,13 +151,6 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
-  Widget _buildFooter() {
-    return Container(
-      height: 140,
-      color: Colors.grey[300],
-    );
-  }
-
   Widget _buildCalendarGrid() {
     return LayoutBuilder(
         builder: (context, constraints) {
@@ -166,6 +160,14 @@ class _CalendarPageState extends State<CalendarPage> {
             _initialJumpDone = true;
             final now = DateTime.now();
             final todayUtc = DateTime.utc(now.year, now.month, now.day);
+            _dayEntries[todayUtc] = DayEntry(
+              date: todayUtc,
+              routines: [
+                Routine(name: 'Gym', color: Colors.redAccent),
+                Routine(name: 'Jog', color: Colors.amber),
+                Routine(name: 'Work', color: Colors.lightBlue)
+              ],
+            );
             final weeksSinceStart =
                 todayUtc.difference(_gridEpoch).inDays ~/ 7;
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -242,5 +244,10 @@ class _CalendarPageState extends State<CalendarPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildFooter() {
+    final entry = _selectedDate != null ? _dayEntries[_selectedDate] : null;
+    return CalendarFooter(selectedDate: _selectedDate, routines: entry?.routines ?? []);
   }
 }
