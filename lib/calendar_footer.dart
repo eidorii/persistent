@@ -65,21 +65,26 @@ class CalendarFooter extends StatelessWidget {
   }
 
   Widget _buildSelected(DateTime date, List<Routine> routines) {
+    final isWeekend = date.weekday >= 6;
+    final dateColor = isWeekend
+      ? const Color.fromRGBO(241, 164, 164, 1.0)
+      : Colors.black87;
     return _Pill(
       key: const ValueKey('selected'),
       child: SizedBox(
         height: 80,
         child: Padding (
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 10),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // date label
               Text(
                 _formatDate(date),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
+                  color: dateColor,
                 ),
               ),
               const SizedBox(width: 16),
