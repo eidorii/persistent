@@ -8,7 +8,7 @@ class Routine {
 
 class DayEntry {
   final DateTime date;
-  final List<String> routines;
+  final List<Routine> routines;
 
   DayEntry({required this.date, this.routines = const []});
 }
