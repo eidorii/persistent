@@ -7,6 +7,7 @@ class Routine {
 }
 
 class DayEntry {
+  // store date as UTC — avoids DST-related inequality when used as a Map key
   final DateTime date;
   final List<Routine> routines;
 

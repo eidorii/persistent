@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 
 class MonthSelector extends StatefulWidget {
-  final int startYear;
   final int monthCount;
   final int currentMonthIndex;
 
   const MonthSelector({
     super.key,
-    required this.startYear,
     required this.monthCount,
     required this.currentMonthIndex,
   });
@@ -19,6 +17,7 @@ class MonthSelector extends StatefulWidget {
 class _MonthSelectorState extends State<MonthSelector> {
   final ScrollController _controller = ScrollController();
   double? _itemWidth;
+  bool _jumpDone = false;
 
   static const _names = [
     'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
@@ -58,12 +57,15 @@ class _MonthSelectorState extends State<MonthSelector> {
       height: 40,
       child: LayoutBuilder(
         builder: (context, constraints) {
+          // 0.55 makes each item wider than half the viewport so adjacent months
+          // peek in on both sides, giving the fade-out effect visual context.
           _itemWidth = constraints.maxWidth * 0.55;
 
           // first build: jump without animation so initial month is centered
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!_controller.hasClients) return;
-            if (_controller.offset == 0 && widget.currentMonthIndex > 0) {
+          if (!_jumpDone) {
+            _jumpDone = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!_controller.hasClients) return;
               final viewport = _controller.position.viewportDimension;
               final target = widget.currentMonthIndex * _itemWidth! -
                   (viewport - _itemWidth!) / 2;
@@ -71,9 +73,11 @@ class _MonthSelectorState extends State<MonthSelector> {
                 _controller.position.minScrollExtent,
                 _controller.position.maxScrollExtent,
               ));
-            }
-          });
+            });
+          }
 
+          // the selector is display-only; scrolling is driven
+          // by the parent via currentMonthIndex
           return IgnorePointer(
             child: ListView.builder(
               controller: _controller,

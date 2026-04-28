@@ -41,6 +41,8 @@ class CalendarFooter extends StatelessWidget {
               child: child,
             ),
           ),
+          // ValueKey is required so AnimatedSwitcher treats the two states as
+          // distinct children and plays the transition when toggling
           child: selectedDate == null
               ? _buildEmpty()
               : _buildSelected(selectedDate!, routines),
@@ -66,6 +68,7 @@ class CalendarFooter extends StatelessWidget {
 
   Widget _buildSelected(DateTime date, List<Routine> routines) {
     final isWeekend = date.weekday >= 6;
+    // weekend label uses the same pink as the weekend cells in the grid
     final dateColor = isWeekend
       ? const Color.fromRGBO(241, 164, 164, 1.0)
       : Colors.black87;
